@@ -138,7 +138,7 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>{{ tournament.name }}</h1>
-        <a href="{{ url_for('index') }}" class="btn btn-secondary">Zurück zur Übersicht</a>
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Zurück zur Übersicht</a>
     </div>
 
     {% if tournament.is_finished %}
@@ -193,62 +193,63 @@
                                 <div class="card-body bg-light-subtle">
                                     {% if matches_by_round %}
                                         <div class="matches-list">
-                                        {% for round_num, round_matches in matches_by_round.items() %}
                                             <div class="row">
-                                            {% for match in round_matches %}
-                                                <div class="col-xl-6">
-                                                    <div class="match-card shadow-sm match-item {% if match.completed %}match-completed{% endif %}"
-                                                         id="match-{{ match.id }}"
-                                                         data-player1="{{ match.player1.name }}"
-                                                         data-player2="{{ match.player2.name }}"
-                                                         data-completed="{{ 'true' if match.completed else 'false' }}">
-                                                        
-                                                        <div class="d-flex justify-content-between align-items-center">
+                                            {% for round_num, round_matches in matches_by_round.items() %}
+                                                {% for match in round_matches %}
+                                                    <div class="col-xl-6">
+                                                        <div class="match-card shadow-sm match-item {% if match.completed %}match-completed{% endif %}"
+                                                             id="match-{{ match.id }}"
+                                                             data-player1="{{ match.player1.name }}"
+                                                             data-player2="{{ match.player2.name }}"
+                                                             data-completed="{{ 'true' if match.completed else 'false' }}">
                                                             
-                                                            <!-- Player 1 (Left) -->
-                                                            <div class="player-container player-left {% if match.completed and match.score_player1 > match.score_player2 %}fw-bold text-success{% endif %}">
-                                                                <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name }}</span>
-                                                                <div class="player-avatar ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name[0] }}</div>
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                
+                                                                <!-- Player 1 (Left) -->
+                                                                <div class="player-container player-left {% if match.completed and match.score_player1 > match.score_player2 %}fw-bold text-success{% endif %}">
+                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name }}</span>
+                                                                    <div class="player-avatar ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name[0] }}</div>
+                                                                </div>
+                    
+                                                                <!-- Score / Inputs (Center) -->
+                                                                <div class="score-container">
+                                                                    {% if tournament.is_finished %}
+                                                                        <div class="score-display">{{ match.score_player1 }} - {{ match.score_player2 }}</div>
+                                                                    {% else %}
+                                                                        {% if match.completed %}
+                                                                            <div class="score-display me-2 score-editable" 
+                                                                                 data-bs-toggle="modal" data-bs-target="#scoreModal"
+                                                                                 data-bs-match-id="{{ match.id }}"
+                                                                                 data-bs-p1-name="{{ match.player1.name }}"
+                                                                                 data-bs-p2-name="{{ match.player2.name }}"
+                                                                                 data-bs-p1-score="{{ match.score_player1 }}"
+                                                                                 data-bs-p2-score="{{ match.score_player2 }}"
+                                                                                 title="Klicken zum Bearbeiten">
+                                                                                {{ match.score_player1 }} - {{ match.score_player2 }}
+                                                                            </div>
+                                                                        {% else %}
+                                                                            <button type="button" class="btn btn-primary btn-sm rounded-pill px-3"
+                                                                                    data-bs-toggle="modal" data-bs-target="#scoreModal"
+                                                                                    data-bs-match-id="{{ match.id }}"
+                                                                                    data-bs-p1-name="{{ match.player1.name }}"
+                                                                                    data-bs-p2-name="{{ match.player2.name }}">
+                                                                                Eingeben
+                                                                            </button>
+                                                                        {% endif %}
+                                                                    {% endif %}
+                                                                </div>                
+                                                                <!-- Player 2 (Right) -->
+                                                                <div class="player-container player-right {% if match.completed and match.score_player2 > match.score_player1 %}fw-bold text-success{% endif %}">
+                                                                    <div class="player-avatar me-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name[0] }}</div>
+                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name }}</span>
+                                                                </div>
+                    
                                                             </div>
-                
-                                                                                                        <!-- Score / Inputs (Center) -->
-                                                                                                        <div class="score-container">
-                                                                                                            {% if tournament.is_finished %}
-                                                                                                                <div class="score-display">{{ match.score_player1 }} - {{ match.score_player2 }}</div>
-                                                                                                            {% else %}
-                                                                                                                {% if match.completed %}
-                                                                                                                                                                        <div class="score-display me-2 score-editable" 
-                                                                                                                                                                             data-bs-toggle="modal" data-bs-target="#scoreModal"
-                                                                                                                                                                             data-bs-match-id="{{ match.id }}"
-                                                                                                                                                                             data-bs-p1-name="{{ match.player1.name }}"
-                                                                                                                                                                             data-bs-p2-name="{{ match.player2.name }}"
-                                                                                                                                                                             data-bs-p1-score="{{ match.score_player1 }}"
-                                                                                                                                                                             data-bs-p2-score="{{ match.score_player2 }}"
-                                                                                                                                                                             title="Klicken zum Bearbeiten">
-                                                                                                                                                                            {{ match.score_player1 }} - {{ match.score_player2 }}
-                                                                                                                                                                        </div>                                                                                                                {% else %}
-                                                                                                                    <button type="button" class="btn btn-primary btn-sm rounded-pill px-3"
-                                                                                                                            data-bs-toggle="modal" data-bs-target="#scoreModal"
-                                                                                                                            data-bs-match-id="{{ match.id }}"
-                                                                                                                            data-bs-p1-name="{{ match.player1.name }}"
-                                                                                                                            data-bs-p2-name="{{ match.player2.name }}">
-                                                                                                                        Eingeben
-                                                                                                                    </button>
-                                                                                                                {% endif %}
-                                                                                                            {% endif %}
-                                                                                                        </div>                
-                                                            <!-- Player 2 (Right) -->
-                                                            <div class="player-container player-right {% if match.completed and match.score_player2 > match.score_player1 %}fw-bold text-success{% endif %}">
-                                                                <div class="player-avatar me-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name[0] }}</div>
-                                                                <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name }}</span>
-                                                            </div>
-                
                                                         </div>
                                                     </div>
-                                                </div>
+                                                {% endfor %}
                                             {% endfor %}
                                             </div>
-                                        {% endfor %}
                                         </div>
                                     {% else %}
                         <p class="text-center text-muted py-4">Keine Spiele vorhanden.</p>
