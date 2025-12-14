@@ -92,17 +92,18 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 120px; /* Namen nicht zu lang werden lassen */
+            max-width: 140px; /* Mehr Platz für Namen */
+            font-size: 0.95rem; /* Etwas kleiner */
         }
         /* Auf Mobile Namen etwas kleiner */
         @media (max-width: 576px) {
-            .player-name { font-size: 0.9rem; max-width: 80px; }
+            .player-name { font-size: 0.85rem; max-width: 80px; }
             .player-avatar { width: 30px; height: 30px; font-size: 0.8rem; margin: 0 5px; }
             .match-card { padding: 10px 5px; }
         }
 
         .score-container {
-            flex: 0 0 140px; /* Feste Breite für die Mitte */
+            flex: 0 0 120px; /* Feste Breite für die Mitte etwas reduziert */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -189,95 +190,67 @@
                         <span class="badge bg-success">Turnier Beendet</span>
                     {% endif %}
                 </div>
-                <div class="card-body bg-light-subtle">
-                    {% if matches_by_round %}
-                        <div class="matches-list">
-                        {% for round_num, round_matches in matches_by_round.items() %}
-                            {% for match in round_matches %}
-                                <div class="match-card shadow-sm match-item {% if match.completed %}match-completed{% endif %}"
-                                     id="match-{{ match.id }}"
-                                     data-player1="{{ match.player1.name }}"
-                                     data-player2="{{ match.player2.name }}"
-                                     data-completed="{{ 'true' if match.completed else 'false' }}">
-                                    
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        
-                                                                                <!-- Player 1 (Left) -->
-                                        
-                                                                                <div class="player-container player-left">
-                                        
-                                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name }}</span>
-                                        
-                                                                                    <div class="player-avatar ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name[0] }}</div>
-                                        
-                                                                                </div>
-                                        
-                                        
-                                        
-                                                                                <!-- Score / Inputs (Center) -->
-                                        
-                                                                                <div class="score-container">
-                                        
-                                                                                    {% if tournament.is_finished %}
-                                        
-                                                                                        <div class="score-display">{{ match.score_player1 }} - {{ match.score_player2 }}</div>
-                                        
-                                                                                    {% else %}
-                                        
-                                                                                        {% if match.completed %}
-                                        
-                                                                                            <div class="d-flex align-items-center justify-content-center">
-                                        
-                                                                                                <div class="score-display me-2">{{ match.score_player1 }} - {{ match.score_player2 }}</div>
-                                        
-                                                                                                <form action="{{ url_for('reopen_match', match_id=match.id) }}" method="post" style="display:inline;">
-                                        
-                                                                                                    <button type="submit" class="btn btn-sm btn-light border rounded-circle text-secondary" style="width: 32px; height: 32px; padding: 0;" title="Ergebnis korrigieren">✏️</button>
-                                        
-                                                                                                </form>
-                                        
-                                                                                            </div>
-                                        
-                                                                                        {% else %}
-                                        
-                                                                                            <form action="{{ url_for('update_score', match_id=match.id) }}" method="post" class="d-flex align-items-center justify-content-center gap-2">
-                                        
-                                                                                                <input type="number" name="score_player1" value="{{ match.score_player1 }}" class="form-control text-center fw-bold" style="width: 70px; height: 40px; font-size: 1.2rem;">
-                                        
-                                                                                                <span class="vs-badge">vs</span>
-                                        
-                                                                                                <input type="number" name="score_player2" value="{{ match.score_player2 }}" class="form-control text-center fw-bold" style="width: 70px; height: 40px; font-size: 1.2rem;">
-                                        
-                                                                                                <button type="submit" class="btn btn-primary d-none">Save</button> <!-- Hidden submit for Enter key -->
-                                        
-                                                                                                <button type="submit" class="btn btn-sm btn-primary rounded-circle shadow-sm" style="width: 32px; height: 32px; padding: 0;" title="Speichern">💾</button>
-                                        
-                                                                                            </form>
-                                        
-                                                                                        {% endif %}
-                                        
-                                                                                    {% endif %}
-                                        
-                                                                                </div>
-                                        
-                                        
-                                        
-                                                                                <!-- Player 2 (Right) -->
-                                        
-                                                                                <div class="player-container player-right">
-                                        
-                                                                                    <div class="player-avatar me-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name[0] }}</div>
-                                        
-                                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name }}</span>
-                                        
-                                                                                </div>
-
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        {% endfor %}
-                        </div>
-                    {% else %}
+                                <div class="card-body bg-light-subtle">
+                                    {% if matches_by_round %}
+                                        <div class="matches-list">
+                                        {% for round_num, round_matches in matches_by_round.items() %}
+                                            <div class="row">
+                                            {% for match in round_matches %}
+                                                <div class="col-xl-6">
+                                                    <div class="match-card shadow-sm match-item {% if match.completed %}match-completed{% endif %}"
+                                                         id="match-{{ match.id }}"
+                                                         data-player1="{{ match.player1.name }}"
+                                                         data-player2="{{ match.player2.name }}"
+                                                         data-completed="{{ 'true' if match.completed else 'false' }}">
+                                                        
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            
+                                                            <!-- Player 1 (Left) -->
+                                                            <div class="player-container player-left {% if match.completed and match.score_player1 > match.score_player2 %}fw-bold text-success{% endif %}">
+                                                                <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name }}</span>
+                                                                <div class="player-avatar ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name[0] }}</div>
+                                                            </div>
+                
+                                                                                                        <!-- Score / Inputs (Center) -->
+                                                                                                        <div class="score-container">
+                                                                                                            {% if tournament.is_finished %}
+                                                                                                                <div class="score-display">{{ match.score_player1 }} - {{ match.score_player2 }}</div>
+                                                                                                            {% else %}
+                                                                                                                {% if match.completed %}
+                                                                                                                                                                        <div class="score-display me-2 score-editable" 
+                                                                                                                                                                             data-bs-toggle="modal" data-bs-target="#scoreModal"
+                                                                                                                                                                             data-bs-match-id="{{ match.id }}"
+                                                                                                                                                                             data-bs-p1-name="{{ match.player1.name }}"
+                                                                                                                                                                             data-bs-p2-name="{{ match.player2.name }}"
+                                                                                                                                                                             data-bs-p1-score="{{ match.score_player1 }}"
+                                                                                                                                                                             data-bs-p2-score="{{ match.score_player2 }}"
+                                                                                                                                                                             title="Klicken zum Bearbeiten">
+                                                                                                                                                                            {{ match.score_player1 }} - {{ match.score_player2 }}
+                                                                                                                                                                        </div>                                                                                                                {% else %}
+                                                                                                                    <button type="button" class="btn btn-primary btn-sm rounded-pill px-3"
+                                                                                                                            data-bs-toggle="modal" data-bs-target="#scoreModal"
+                                                                                                                            data-bs-match-id="{{ match.id }}"
+                                                                                                                            data-bs-p1-name="{{ match.player1.name }}"
+                                                                                                                            data-bs-p2-name="{{ match.player2.name }}">
+                                                                                                                        Eingeben
+                                                                                                                    </button>
+                                                                                                                {% endif %}
+                                                                                                            {% endif %}
+                                                                                                        </div>                
+                                                            <!-- Player 2 (Right) -->
+                                                            <div class="player-container player-right {% if match.completed and match.score_player2 > match.score_player1 %}fw-bold text-success{% endif %}">
+                                                                <div class="player-avatar me-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name[0] }}</div>
+                                                                <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name }}</span>
+                                                            </div>
+                
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                            </div>
+                                        {% endfor %}
+                                        </div>
+                                    {% else %}
                         <p class="text-center text-muted py-4">Keine Spiele vorhanden.</p>
                     {% endif %}
                 </div>
@@ -285,27 +258,35 @@
         </div>
         <div class="col-lg-4">
             <div class="card shadow-sm border-0 sticky-top" style="top: 20px; z-index: 1;">
-                <div class="card-header bg-primary text-white py-3">
-                    <h5 class="mb-0 text-white">Tabelle</h5>
+                <div class="card-header bg-transparent border-bottom py-3">
+                    <h5 class="mb-0 text-body-secondary"><span class="me-2">🏆</span>Tabelle</h5>
                 </div>
                 <ul class="list-group list-group-flush">
                     {% if standings %}
                         {% for player_standing in standings %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center py-3 {% if loop.index == 1 and tournament.is_finished %}bg-warning bg-opacity-25{% endif %}">
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3"
+                                style="
+                                {% if loop.index == 1 %}background-color: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107;{% endif %}
+                                {% if loop.index == 2 %}background-color: rgba(173, 181, 189, 0.2); border-left: 4px solid #adb5bd;{% endif %}
+                                {% if loop.index == 3 %}background-color: rgba(205, 127, 50, 0.2); border-left: 4px solid #cd7f32;{% endif %}
+                                ">
+                                
                                 <div class="d-flex align-items-center">
-                                    <span class="fw-bold text-muted me-3" style="width: 20px;">{{ loop.index }}.</span>
-                                    <div class="player-avatar badge-hover-target" style="width: 30px; height: 30px; font-size: 0.8rem; background-color: var(--bs-secondary); cursor: pointer;" data-player="{{ player_standing.player.name }}">{{ player_standing.player.name[0] }}</div>
+                                    <span class="fw-bold text-muted me-3 d-flex justify-content-center fs-5" style="width: 30px;">
+                                        {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}.{% endif %}
+                                    </span>
+                                    <div class="player-avatar badge-hover-target shadow-sm" style="width: 30px; height: 30px; font-size: 0.8rem; background-color: var(--bs-primary); color: white; cursor: pointer;" data-player="{{ player_standing.player.name }}">{{ player_standing.player.name[0] }}</div>
                                     <span class="fw-bold ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ player_standing.player.name }}">{{ player_standing.player.name }}</span>
                                 </div>
                                 <div class="text-end">
-                                    <div class="d-flex justify-content-end mb-1">
-                                        <span class="badge bg-success me-1" title="Gewonnen">{{ player_standing.wins }}</span>
-                                        <span class="badge bg-secondary me-1" title="Unentschieden" style="background-color: #6c757d;">{{ player_standing.draws }}</span>
-                                        <span class="badge bg-danger" title="Verloren">{{ player_standing.losses }}</span>
+                                    <div class="d-flex justify-content-end mb-1 align-items-center">
+                                        <span class="badge bg-success bg-opacity-75 text-white me-1" title="Gewonnen">{{ player_standing.wins }}</span>
+                                        <span class="badge bg-secondary bg-opacity-50 text-dark me-1" title="Unentschieden">{{ player_standing.draws }}</span>
+                                        <span class="badge bg-danger bg-opacity-75 text-white" title="Verloren">{{ player_standing.losses }}</span>
                                     </div>
                                     <div>
-                                        <small class="text-muted me-2">{{ player_standing.legs_won }}:{{ player_standing.legs_lost }}</small>
-                                        <span class="badge bg-primary rounded-pill">{{ player_standing.points }} Pkt</span>
+                                        <small class="text-muted me-2 fw-semibold">{{ player_standing.legs_won }}:{{ player_standing.legs_lost }}</small>
+                                        <span class="badge bg-primary rounded-pill shadow-sm">{{ player_standing.points }} Pkt</span>
                                     </div>
                                 </div>
                             </li>
@@ -321,10 +302,87 @@
 {% endblock %}
 
 {% block scripts %}
+    <!-- Score Input Modal -->
+    <div class="modal fade" id="scoreModal" tabindex="-1" aria-labelledby="scoreModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="scoreModalLabel">Ergebnis eintragen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="scoreForm" method="post" action="">
+                    <div class="modal-body">
+                        <div class="row align-items-center mb-3">
+                            <div class="col-5 text-end">
+                                <label for="score_player1" class="form-label fw-bold mb-0" id="label_player1">Player 1</label>
+                            </div>
+                            <div class="col-2 text-center">
+                                <span class="text-muted">vs</span>
+                            </div>
+                            <div class="col-5 text-start">
+                                <label for="score_player2" class="form-label fw-bold mb-0" id="label_player2">Player 2</label>
+                            </div>
+                        </div>
+                        <div class="row g-2 justify-content-center">
+                            <div class="col-4">
+                                <input type="number" class="form-control text-center fs-4" id="score_player1" name="score_player1" required min="0" value="0">
+                            </div>
+                            <div class="col-auto align-self-center">
+                                <span class="fs-4">:</span>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" class="form-control text-center fs-4" id="score_player2" name="score_player2" required min="0" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary">Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const badges = document.querySelectorAll('.badge-hover-target');
             const matchCards = document.querySelectorAll('.match-item');
+
+            // Modal Logic
+            const scoreModal = document.getElementById('scoreModal');
+            if (scoreModal) {
+                scoreModal.addEventListener('show.bs.modal', event => {
+                    const button = event.relatedTarget;
+                    const matchId = button.getAttribute('data-bs-match-id');
+                    const p1Name = button.getAttribute('data-bs-p1-name');
+                    const p2Name = button.getAttribute('data-bs-p2-name');
+                    const p1Score = button.getAttribute('data-bs-p1-score');
+                    const p2Score = button.getAttribute('data-bs-p2-score');
+
+                    const form = scoreModal.querySelector('#scoreForm');
+                    const labelP1 = scoreModal.querySelector('#label_player1');
+                    const labelP2 = scoreModal.querySelector('#label_player2');
+                    const inputP1 = scoreModal.querySelector('#score_player1');
+                    const inputP2 = scoreModal.querySelector('#score_player2');
+
+                    form.action = `/update_score/${matchId}`;
+                    labelP1.textContent = p1Name;
+                    labelP2.textContent = p2Name;
+                    
+                    if (p1Score && p1Score !== 'None') {
+                        inputP1.value = p1Score;
+                    } else {
+                        inputP1.value = '0';
+                    }
+                    
+                    if (p2Score && p2Score !== 'None') {
+                        inputP2.value = p2Score;
+                    } else {
+                        inputP2.value = '0';
+                    }
+                });
+            }
 
             // 1. Hover über Spielernamen (Badge) -> Zeige alle Spiele DIESES Spielers (Gelb)
             badges.forEach(badge => {
@@ -360,6 +418,12 @@
                 card.addEventListener('click', (e) => {
                     // Wenn der Klick von einem Badge kam, wurde er schon oben behandelt und gestoppt
                     if (e.target.closest('.badge-hover-target')) {
+                        return;
+                    }
+                    
+                    // Wenn das Spiel bereits abgeschlossen ist, soll die Parallel-Logik NICHT greifen.
+                    // (Das Bearbeiten des Ergebnisses läuft über das Modal und wird separat behandelt)
+                    if (card.dataset.completed === 'true') {
                         return;
                     }
 

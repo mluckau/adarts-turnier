@@ -15,10 +15,13 @@
                     <form action="{{ url_for('create_tournament') }}" method="post">
                         <div class="mb-3">
                             <label for="tournament_name" class="form-label">Turniername</label>
-                            <input type="text" class="form-control" id="tournament_name" name="tournament_name" placeholder="z.B. Montags-Liga" required>
+                            <input type="text" class="form-control" id="tournament_name" name="tournament_name" value="{{ default_tournament_name }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="player_names" class="form-label">Spielernamen (einer pro Zeile)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="player_names" class="form-label mb-0">Spielernamen (einer pro Zeile)</label>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="shuffle-btn" title="Namen mischen">🔀 Mischen</button>
+                            </div>
                             <textarea class="form-control" id="player_names" name="player_names" rows="5" required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">Turnier starten</button>
@@ -51,7 +54,14 @@
                 <ul class="list-group list-group-flush">
                     {% for tournament in tournaments %}
                         <a href="{{ url_for('tournament_view', tournament_id=tournament.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                            {{ tournament.name }}
+                            <div>
+                                {{ tournament.name }}
+                                {% if tournament.is_finished %}
+                                    <span class="badge bg-success ms-2">Beendet</span>
+                                {% else %}
+                                    <span class="badge bg-primary ms-2">Läuft</span>
+                                {% endif %}
+                            </div>
                             <small class="text-muted">{{ tournament.date_created.strftime('%d.%m.%Y %H:%M') }}</small>
                         </a>
                     {% else %}
@@ -68,6 +78,19 @@
     document.addEventListener('DOMContentLoaded', () => {
         const addPlayerButtons = document.querySelectorAll('.add-player-btn');
         const playerNamesTextarea = document.getElementById('player_names');
+        const shuffleBtn = document.getElementById('shuffle-btn');
+
+        // Shuffle Function (Fisher-Yates)
+        shuffleBtn.addEventListener('click', () => {
+            let names = playerNamesTextarea.value.trim().split('\n').map(n => n.trim()).filter(n => n);
+            if (names.length < 2) return;
+
+            for (let i = names.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [names[i], names[j]] = [names[j], names[i]];
+            }
+            playerNamesTextarea.value = names.join('\n');
+        });
 
         addPlayerButtons.forEach(button => {
             button.addEventListener('click', () => {

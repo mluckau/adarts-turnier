@@ -64,7 +64,9 @@ def index():
         Player.name != "BYE_PLAYER_DUMMY").distinct().all()
     known_player_names = [name[0] for name in known_player_names_query]
 
-    return render_template('index.html', tournaments=tournaments, known_player_names=known_player_names)
+    default_tournament_name = f"Turnier vom {datetime.now().strftime('%d.%m.%Y')}"
+
+    return render_template('index.html', tournaments=tournaments, known_player_names=known_player_names, default_tournament_name=default_tournament_name)
 
 
 @app.route('/create_tournament', methods=['POST'])
@@ -78,6 +80,13 @@ def create_tournament():
 
     if len(player_names) < 2:
         return redirect(url_for('index'))  # Not enough players
+
+    # Handle duplicate tournament names
+    original_name = tournament_name
+    counter = 1
+    while Tournament.query.filter_by(name=tournament_name).first() is not None:
+        counter += 1
+        tournament_name = f"{original_name} ({counter})"
 
     # Create new Tournament
     tournament = Tournament(name=tournament_name)
@@ -179,7 +188,16 @@ def tournament_view(tournament_id):
     player_stats = {player.id: {'player': player, 'points': 0, 'wins': 0,
                                 'losses': 0, 'draws': 0, 'legs_won': 0, 'legs_lost': 0} for player in players}
 
+    # Helper map to find match between two players quickly
+    match_map = {}
+
     for match in matches:
+        if match.player2_id is not None:
+            # Store match reference for direct comparison
+            p1 = match.player1_id
+            p2 = match.player2_id
+            match_map[(min(p1, p2), max(p1, p2))] = match
+
         if match.completed and match.player2_id is not None:  # Exclude byes
             # Update legs
             player_stats[match.player1.id]['legs_won'] += match.score_player1
@@ -205,10 +223,87 @@ def tournament_view(tournament_id):
         elif match.completed and match.player2_id is None:  # Handle byes
             pass
 
-    # Convert to a list and sort
+    # --- Advanced Sorting Logic (Mini-League for Tie-Breaking) ---
+
+    def calculate_mini_league(tied_players_ids):
+        """
+        Calculates stats considering ONLY matches between the players in tied_players_ids.
+        Returns a dict: {player_id: {'mini_points': x, 'mini_diff': y, 'mini_legs_won': z}}
+        """
+        mini_stats = {pid: {'mini_points': 0, 'mini_diff': 0,
+                            'mini_legs_won': 0} for pid in tied_players_ids}
+
+        for match in matches:
+            if match.completed and match.player1_id in tied_players_ids and match.player2_id in tied_players_ids:
+                p1 = match.player1_id
+                p2 = match.player2_id
+
+                s1 = match.score_player1
+                s2 = match.score_player2
+
+                # Update Mini Legs
+                mini_stats[p1]['mini_legs_won'] += s1
+                mini_stats[p1]['mini_diff'] += (s1 - s2)
+
+                mini_stats[p2]['mini_legs_won'] += s2
+                mini_stats[p2]['mini_diff'] += (s2 - s1)
+
+                # Update Mini Points
+                if s1 > s2:
+                    mini_stats[p1]['mini_points'] += 2
+                elif s2 > s1:
+                    mini_stats[p2]['mini_points'] += 2
+                else:
+                    mini_stats[p1]['mini_points'] += 1
+                    mini_stats[p2]['mini_points'] += 1
+        return mini_stats
+
+    # 1. Initial sort by Total Points
+    # We group players by points to identify ties.
     standings = list(player_stats.values())
+    # Primary sort key: Points (desc)
+    # Secondary sort key (temporary): Overall Leg Diff (desc) just to have a stable starting point
     standings.sort(key=lambda x: (
-        x['points'], (x['legs_won'] - x['legs_lost'])), reverse=True)
+        x['points'], x['legs_won'] - x['legs_lost']), reverse=True)
+
+    final_standings = []
+
+    # Process groups of players with the same points
+    import itertools
+    for points, group in itertools.groupby(standings, key=lambda x: x['points']):
+        group_list = list(group)
+
+        if len(group_list) < 2:
+            # No tie, just add to final standings
+            final_standings.extend(group_list)
+        else:
+            # Tie detected! Apply Mini-League logic.
+            tied_ids = {p['player'].id for p in group_list}
+            mini_results = calculate_mini_league(tied_ids)
+
+            # Sort the tied group based on specific criteria hierarchy
+            def tie_breaker_key(p_stat):
+                pid = p_stat['player'].id
+                mini = mini_results[pid]
+
+                # Criteria 1: Mini-League Points (desc)
+                c1 = mini['mini_points']
+
+                # Criteria 2: Mini-League Leg Difference (desc)
+                c2 = mini['mini_diff']
+
+                # Criteria 3: Overall Leg Difference (desc) - Fallback to global stats
+                c3 = p_stat['legs_won'] - p_stat['legs_lost']
+
+                # Criteria 4: Overall Legs Won (desc)
+                c4 = p_stat['legs_won']
+
+                return (c1, c2, c3, c4)
+
+            group_list.sort(key=tie_breaker_key, reverse=True)
+            final_standings.extend(group_list)
+
+    standings = final_standings
 
     # Group matches by round for display, excluding bye matches
     matches_by_round = {}
@@ -245,4 +340,4 @@ def finish_tournament(tournament_id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, port=5123)
