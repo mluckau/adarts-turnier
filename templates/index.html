@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Darts Turnier - Startseite{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Willkommen beim Darts Turnier!</h1>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Neues Turnier erstellen
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('create_tournament') }}" method="post">
+                        <div class="mb-3">
+                            <label for="tournament_name" class="form-label">Turniername</label>
+                            <input type="text" class="form-control" id="tournament_name" name="tournament_name" placeholder="z.B. Montags-Liga" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="player_names" class="form-label">Spielernamen (einer pro Zeile)</label>
+                            <textarea class="form-control" id="player_names" name="player_names" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Turnier starten</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    Bekannte Spieler
+                </div>
+                <div class="card-body">
+                    {% if known_player_names %}
+                        <div id="known-players-list">
+                            {% for name in known_player_names %}
+                                <button type="button" class="btn btn-sm btn-outline-primary m-1 add-player-btn" data-player-name="{{ name }}">{{ name }}</button>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p>Noch keine Spieler erfasst. Erstelle ein Turnier, um Spieler hinzuzufügen.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Vergangene Turniere
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for tournament in tournaments %}
+                        <a href="{{ url_for('tournament_view', tournament_id=tournament.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            {{ tournament.name }}
+                            <small class="text-muted">{{ tournament.date_created.strftime('%d.%m.%Y %H:%M') }}</small>
+                        </a>
+                    {% else %}
+                        <li class="list-group-item">Keine Turniere gefunden.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const addPlayerButtons = document.querySelectorAll('.add-player-btn');
+        const playerNamesTextarea = document.getElementById('player_names');
+
+        addPlayerButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const playerName = button.dataset.playerName;
+                let currentNames = playerNamesTextarea.value.trim();
+                let namesArray = currentNames ? currentNames.split('\n').map(name => name.trim()) : [];
+
+                if (!namesArray.includes(playerName)) {
+                    if (currentNames) {
+                        playerNamesTextarea.value += '\n' + playerName;
+                    } else {
+                        playerNamesTextarea.value = playerName;
+                    }
+                }
+                // Optional: Scroll to bottom
+                playerNamesTextarea.scrollTop = playerNamesTextarea.scrollHeight;
+            });
+        });
+    });
+</script>
+{% endblock %}

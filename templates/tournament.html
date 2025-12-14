@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tournament.name }} - Turnieransicht{% endblock %}
+
+{% block content %}
+    <style>
+        .match-card {
+            background: var(--bs-body-bg);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+        }
+
+        .match-card.match-completed {
+            background-color: var(--bs-tertiary-bg); /* Leicht abgedunkelt/grau */
+            opacity: 0.85;
+            border-color: transparent;
+        }
+
+        .match-highlight {
+            border: 2px solid #ffc107 !important; /* Warning color border */
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.3) !important;
+            transform: scale(1.02);
+            z-index: 10;
+        }
+
+        .match-playable {
+            border: 2px solid #198754 !important; /* Success color (Green) */
+            box-shadow: 0 0 15px rgba(25, 135, 84, 0.4) !important;
+            transform: scale(1.02);
+            z-index: 5;
+        }
+        
+        .match-playable::after {
+            content: "Möglich";
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: #198754;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .match-blocked {
+            opacity: 0.3;
+            filter: grayscale(100%);
+        }
+
+        .player-container {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            font-weight: 600;
+        }
+
+        .player-left {
+            justify-content: flex-end;
+            text-align: right;
+        }
+
+        .player-right {
+            justify-content: flex-start;
+            text-align: left;
+        }
+
+        .player-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--bs-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 0 10px;
+            flex-shrink: 0;
+            text-transform: uppercase;
+        }
+        
+        .player-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px; /* Namen nicht zu lang werden lassen */
+        }
+        /* Auf Mobile Namen etwas kleiner */
+        @media (max-width: 576px) {
+            .player-name { font-size: 0.9rem; max-width: 80px; }
+            .player-avatar { width: 30px; height: 30px; font-size: 0.8rem; margin: 0 5px; }
+            .match-card { padding: 10px 5px; }
+        }
+
+        .score-container {
+            flex: 0 0 140px; /* Feste Breite für die Mitte */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .vs-badge {
+            font-size: 0.8rem;
+            color: var(--bs-secondary-color);
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .score-display {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--bs-heading-color);
+        }
+
+        .edit-btn-wrapper {
+            position: absolute;
+            margin-left: 60px; /* Neben dem Score platzieren */
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        .match-card:hover .edit-btn-wrapper {
+            opacity: 1;
+        }
+
+    </style>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ tournament.name }}</h1>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Zurück zur Übersicht</a>
+    </div>
+
+    {% if tournament.is_finished %}
+        <div class="row mb-5 justify-content-center">
+            <div class="col-md-8 text-center">
+                <h2>Siegerehrung</h2>
+                <div class="d-flex justify-content-center align-items-end" style="height: 300px;">
+                    {% if standings|length >= 2 %}
+                    <div class="p-3 bg-secondary text-white d-flex flex-column justify-content-end align-items-center shadow" style="height: 60%; width: 30%; margin-right: 5px; border-radius: 5px 5px 0 0;">
+                        <div class="fw-bold fs-4">2</div>
+                        <div class="text-truncate" style="max-width: 100%;">{{ standings[1].player.name }}</div>
+                        <div class="small">{{ standings[1].points }} Pkt</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if standings|length >= 1 %}
+                    <div class="p-3 bg-warning text-dark d-flex flex-column justify-content-end align-items-center shadow-lg" style="height: 80%; width: 30%; z-index: 10; border-radius: 5px 5px 0 0;">
+                        <div class="display-4">🏆</div>
+                        <div class="fw-bold fs-3">1</div>
+                        <div class="fw-bold text-truncate" style="max-width: 100%;">{{ standings[0].player.name }}</div>
+                        <div class="small">{{ standings[0].points }} Pkt</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if standings|length >= 3 %}
+                    <div class="p-3 bg-danger text-white d-flex flex-column justify-content-end align-items-center shadow" style="height: 40%; width: 30%; margin-left: 5px; border-radius: 5px 5px 0 0; background-color: #cd7f32 !important;">
+                        <div class="fw-bold fs-4">3</div>
+                        <div class="text-truncate" style="max-width: 100%;">{{ standings[2].player.name }}</div>
+                        <div class="small">{{ standings[2].points }} Pkt</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0">Spiele</h5>
+                    {% if not tournament.is_finished %}
+                        {% if all_matches_completed %}
+                             <form action="{{ url_for('finish_tournament', tournament_id=tournament.id) }}" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-success btn-sm fw-bold px-3" onclick="return confirm('Bist du sicher? Das Turnier wird beendet und Ergebnisse können nicht mehr geändert werden.')">Turnier beenden</button>
+                             </form>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-success">Turnier Beendet</span>
+                    {% endif %}
+                </div>
+                <div class="card-body bg-light-subtle">
+                    {% if matches_by_round %}
+                        <div class="matches-list">
+                        {% for round_num, round_matches in matches_by_round.items() %}
+                            {% for match in round_matches %}
+                                <div class="match-card shadow-sm match-item {% if match.completed %}match-completed{% endif %}"
+                                     id="match-{{ match.id }}"
+                                     data-player1="{{ match.player1.name }}"
+                                     data-player2="{{ match.player2.name }}"
+                                     data-completed="{{ 'true' if match.completed else 'false' }}">
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        
+                                                                                <!-- Player 1 (Left) -->
+                                        
+                                                                                <div class="player-container player-left">
+                                        
+                                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name }}</span>
+                                        
+                                                                                    <div class="player-avatar ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name[0] }}</div>
+                                        
+                                                                                </div>
+                                        
+                                        
+                                        
+                                                                                <!-- Score / Inputs (Center) -->
+                                        
+                                                                                <div class="score-container">
+                                        
+                                                                                    {% if tournament.is_finished %}
+                                        
+                                                                                        <div class="score-display">{{ match.score_player1 }} - {{ match.score_player2 }}</div>
+                                        
+                                                                                    {% else %}
+                                        
+                                                                                        {% if match.completed %}
+                                        
+                                                                                            <div class="d-flex align-items-center justify-content-center">
+                                        
+                                                                                                <div class="score-display me-2">{{ match.score_player1 }} - {{ match.score_player2 }}</div>
+                                        
+                                                                                                <form action="{{ url_for('reopen_match', match_id=match.id) }}" method="post" style="display:inline;">
+                                        
+                                                                                                    <button type="submit" class="btn btn-sm btn-light border rounded-circle text-secondary" style="width: 32px; height: 32px; padding: 0;" title="Ergebnis korrigieren">✏️</button>
+                                        
+                                                                                                </form>
+                                        
+                                                                                            </div>
+                                        
+                                                                                        {% else %}
+                                        
+                                                                                            <form action="{{ url_for('update_score', match_id=match.id) }}" method="post" class="d-flex align-items-center justify-content-center gap-2">
+                                        
+                                                                                                <input type="number" name="score_player1" value="{{ match.score_player1 }}" class="form-control text-center fw-bold" style="width: 70px; height: 40px; font-size: 1.2rem;">
+                                        
+                                                                                                <span class="vs-badge">vs</span>
+                                        
+                                                                                                <input type="number" name="score_player2" value="{{ match.score_player2 }}" class="form-control text-center fw-bold" style="width: 70px; height: 40px; font-size: 1.2rem;">
+                                        
+                                                                                                <button type="submit" class="btn btn-primary d-none">Save</button> <!-- Hidden submit for Enter key -->
+                                        
+                                                                                                <button type="submit" class="btn btn-sm btn-primary rounded-circle shadow-sm" style="width: 32px; height: 32px; padding: 0;" title="Speichern">💾</button>
+                                        
+                                                                                            </form>
+                                        
+                                                                                        {% endif %}
+                                        
+                                                                                    {% endif %}
+                                        
+                                                                                </div>
+                                        
+                                        
+                                        
+                                                                                <!-- Player 2 (Right) -->
+                                        
+                                                                                <div class="player-container player-right">
+                                        
+                                                                                    <div class="player-avatar me-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name[0] }}</div>
+                                        
+                                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name }}</span>
+                                        
+                                                                                </div>
+
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted py-4">Keine Spiele vorhanden.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 sticky-top" style="top: 20px; z-index: 1;">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0 text-white">Tabelle</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% if standings %}
+                        {% for player_standing in standings %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3 {% if loop.index == 1 and tournament.is_finished %}bg-warning bg-opacity-25{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold text-muted me-3" style="width: 20px;">{{ loop.index }}.</span>
+                                    <div class="player-avatar badge-hover-target" style="width: 30px; height: 30px; font-size: 0.8rem; background-color: var(--bs-secondary); cursor: pointer;" data-player="{{ player_standing.player.name }}">{{ player_standing.player.name[0] }}</div>
+                                    <span class="fw-bold ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ player_standing.player.name }}">{{ player_standing.player.name }}</span>
+                                </div>
+                                <div class="text-end">
+                                    <div class="d-flex justify-content-end mb-1">
+                                        <span class="badge bg-success me-1" title="Gewonnen">{{ player_standing.wins }}</span>
+                                        <span class="badge bg-secondary me-1" title="Unentschieden" style="background-color: #6c757d;">{{ player_standing.draws }}</span>
+                                        <span class="badge bg-danger" title="Verloren">{{ player_standing.losses }}</span>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted me-2">{{ player_standing.legs_won }}:{{ player_standing.legs_lost }}</small>
+                                        <span class="badge bg-primary rounded-pill">{{ player_standing.points }} Pkt</span>
+                                    </div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="list-group-item">Keine Platzierungen verfügbar.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const badges = document.querySelectorAll('.badge-hover-target');
+            const matchCards = document.querySelectorAll('.match-item');
+
+            // 1. Hover über Spielernamen (Badge) -> Zeige alle Spiele DIESES Spielers (Gelb)
+            badges.forEach(badge => {
+                badge.addEventListener('mouseenter', (e) => {
+                    // Eventuelle Klick-Highlights entfernen, um Konflikte zu vermeiden
+                    resetClickedMatchStyles();
+
+                    const playerName = badge.dataset.player;
+                    matchCards.forEach(match => {
+                        if (match.dataset.completed === 'false') {
+                            if (match.dataset.player1 === playerName || match.dataset.player2 === playerName) {
+                                match.classList.add('match-highlight');
+                            } else {
+                                match.classList.add('match-blocked');
+                            }
+                        }
+                    });
+                });
+
+                badge.addEventListener('mouseleave', () => {
+                    resetMatchStyles(); // Setzt alle Highlight-Stile zurück
+                });
+                
+                badge.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Verhindert, dass der Klick auf die Karte auch auslöst
+                });
+            });
+
+            let activeMatchId = null; // Speichert das aktuell geklickte Match
+
+            // Klick auf Match-Karte -> Zeige alle PARALLEL MÖGLICHEN Spiele (Grün)
+            matchCards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    // Wenn der Klick von einem Badge kam, wurde er schon oben behandelt und gestoppt
+                    if (e.target.closest('.badge-hover-target')) {
+                        return;
+                    }
+
+                    const currentCardId = card.id; // Jede Karte braucht eine eindeutige ID
+
+                    if (activeMatchId === currentCardId) {
+                        // Zweiten Klick auf dasselbe Match -> Deaktivieren
+                        activeMatchId = null;
+                        resetMatchStyles();
+                        card.classList.remove('border-primary'); // Entfernt den Rahmen vom geklickten Match
+                    } else {
+                        // Anderes Match geklickt oder neues Match aktiviert
+                        activeMatchId = currentCardId;
+                        resetMatchStyles(); // Alle vorherigen Highlights entfernen
+                        card.classList.add('border-primary'); // Hebt das geklickte Match hervor
+
+                        // Wenn das geklickte Spiel fertig ist, keine "Parallel"-Logik anzeigen
+                        if (card.dataset.completed === 'true') {
+                            return; // Keine weitere Logik für fertige Spiele
+                        }
+
+                        const p1 = card.dataset.player1;
+                        const p2 = card.dataset.player2;
+                        
+                        matchCards.forEach(otherMatch => {
+                            if (otherMatch === card) return; // Sich selbst ignorieren
+                            if (otherMatch.dataset.completed === 'true') return; // Fertige ignorieren
+
+                            const otherP1 = otherMatch.dataset.player1;
+                            const otherP2 = otherMatch.dataset.player2;
+
+                            if (otherP1 !== p1 && otherP1 !== p2 && otherP2 !== p1 && otherP2 !== p2) {
+                                // Keine Kollision -> Spielbar!
+                                otherMatch.classList.add('match-playable');
+                            } else {
+                                // Kollision -> Blockiert
+                                otherMatch.classList.add('match-blocked');
+                            }
+                        });
+                    }
+                });
+            });
+
+            function resetMatchStyles() {
+                matchCards.forEach(match => {
+                    match.classList.remove('match-highlight');
+                    match.classList.remove('match-playable');
+                    match.classList.remove('match-blocked');
+                    // Der border-primary wird nur vom click event verwaltet
+                });
+            }
+
+            function resetClickedMatchStyles() {
+                // Diese Funktion wird vom Badge-Hover aufgerufen, um nur die Klick-Highlights zu entfernen
+                // bevor die Badge-Highlights angewendet werden
+                if (activeMatchId) {
+                    document.getElementById(activeMatchId).classList.remove('border-primary');
+                    activeMatchId = null;
+                }
+                matchCards.forEach(match => {
+                    match.classList.remove('match-playable');
+                    match.classList.remove('match-blocked');
+                });
+            }
+        });
+    </script>
+{% endblock %}
