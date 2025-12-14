@@ -28,11 +28,15 @@ Eine moderne, webbasierte Anwendung zur Verwaltung von Darts-Turnieren (oder äh
 
 1.  Repository klonen oder herunterladen.
 2.  Python-Umgebung einrichten (siehe `INSTALL.md`).
-3.  App starten:
+3.  Abhängigkeiten installieren:
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  App starten:
     ```bash
     python app.py
     ```
-4.  Browser öffnen: `http://127.0.0.1:5123`
+5.  Browser öffnen: `http://127.0.0.1:5123`
 
 ## 🛠️ Technologie
 

@@ -34,13 +34,11 @@ python -m venv .venv
 
 ## Schritt 3: Abhängigkeiten installieren
 
-Installiere die benötigten Python-Pakete (Flask, SQLAlchemy) mit `pip`:
+Installiere alle benötigten Python-Pakete automatisch mit `pip`:
 
 ```bash
-pip install Flask Flask-SQLAlchemy
+pip install -r requirements.txt
 ```
-
-*(Optional: Falls eine `requirements.txt` vorliegt, nutze `pip install -r requirements.txt`)*
 
 ## Schritt 4: Anwendung starten
 
