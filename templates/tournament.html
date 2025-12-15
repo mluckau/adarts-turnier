@@ -32,6 +32,16 @@
             z-index: 10;
         }
 
+        /* Specific selector to override match-completed styles */
+        div.match-card.match-highlight-completed {
+            border: 2px solid #198754 !important; /* Success color border (Green) */
+            box-shadow: 0 0 15px rgba(25, 135, 84, 0.5) !important;
+            transform: scale(1.02);
+            z-index: 20;
+            opacity: 1 !important;
+            /* Removed background-color: #d1e7dd !important; */
+        }
+
         .match-playable {
             border: 2px solid #198754 !important; /* Success color (Green) */
             box-shadow: 0 0 15px rgba(25, 135, 84, 0.4) !important;
@@ -409,12 +419,17 @@
 
                     const playerName = badge.dataset.player;
                     matchCards.forEach(match => {
-                        if (match.dataset.completed === 'false') {
-                            if (match.dataset.player1 === playerName || match.dataset.player2 === playerName) {
-                                match.classList.add('match-highlight');
+                        const isParticipant = (match.dataset.player1 === playerName || match.dataset.player2 === playerName);
+                        const isCompleted = (match.dataset.completed === 'true');
+
+                        if (isParticipant) {
+                            if (isCompleted) {
+                                match.classList.add('match-highlight-completed');
                             } else {
-                                match.classList.add('match-blocked');
+                                match.classList.add('match-highlight');
                             }
+                        } else {
+                            match.classList.add('match-blocked');
                         }
                     });
                 });
@@ -487,6 +502,7 @@
             function resetMatchStyles() {
                 matchCards.forEach(match => {
                     match.classList.remove('match-highlight');
+                    match.classList.remove('match-highlight-completed');
                     match.classList.remove('match-playable');
                     match.classList.remove('match-blocked');
                     // Der border-primary wird nur vom click event verwaltet
