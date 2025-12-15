@@ -11,6 +11,7 @@
             padding: 15px;
             margin-bottom: 12px;
             transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
         }
         
         .match-card:hover {
@@ -180,9 +181,12 @@
             <div class="card mb-4 shadow-sm border-0">
                 <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
                     <h5 class="mb-0">Spiele</h5>
+                    <span class="badge bg-secondary ms-2" style="font-size: 0.7em; vertical-align: middle;">
+                        {{ completed_matches }} / {{ total_matches }} gespielt
+                    </span>
                     {% if not tournament.is_finished %}
                         {% if all_matches_completed %}
-                             <form action="{{ url_for('finish_tournament', tournament_id=tournament.id) }}" method="post" style="display: inline;">
+                             <form action="{{ url_for('main.finish_tournament', tournament_id=tournament.id) }}" method="post" style="display: inline;">
                                 <button type="submit" class="btn btn-success btn-sm fw-bold px-3" onclick="return confirm('Bist du sicher? Das Turnier wird beendet und Ergebnisse können nicht mehr geändert werden.')">Turnier beenden</button>
                              </form>
                         {% endif %}
@@ -203,6 +207,10 @@
                                                              data-player2="{{ match.player2.name }}"
                                                              data-completed="{{ 'true' if match.completed else 'false' }}">
                                                             
+                                                            <div class="position-absolute top-0 start-0 m-2 text-muted small fw-bold" style="font-size: 0.7rem; opacity: 1;">
+                                                                #{{ match.display_number }}
+                                                            </div>
+
                                                             <div class="d-flex justify-content-between align-items-center">
                                                                 
                                                                 <!-- Player 1 (Left) -->

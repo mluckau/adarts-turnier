@@ -128,8 +128,18 @@ def tournament_view(tournament_id):
 
     # Group matches by round for display, excluding bye matches
     matches_by_round = {}
+    match_counter = 1
+    total_matches = 0
+    completed_matches = 0
+    
     for match in matches:
         if match.player2_id is not None:  # Exclude matches with a bye
+            total_matches += 1
+            if match.completed:
+                completed_matches += 1
+                
+            match.display_number = match_counter
+            match_counter += 1
             if match.round_number not in matches_by_round:
                 matches_by_round[match.round_number] = []
             matches_by_round[match.round_number].append(match)
@@ -140,7 +150,7 @@ def tournament_view(tournament_id):
     all_matches_completed = (unfinished_matches_count ==
                              0) and (len(matches) > 0)
 
-    return render_template('tournament.html', tournament=tournament, matches_by_round=matches_by_round, standings=standings, all_matches_completed=all_matches_completed)
+    return render_template('tournament.html', tournament=tournament, matches_by_round=matches_by_round, standings=standings, all_matches_completed=all_matches_completed, total_matches=total_matches, completed_matches=completed_matches)
 
 
 @main.route('/finish_tournament/<int:tournament_id>', methods=['POST'])
