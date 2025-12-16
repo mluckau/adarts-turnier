@@ -68,6 +68,11 @@
                                 {% else %}
                                     <span class="badge bg-primary ms-2">Läuft</span>
                                 {% endif %}
+                                {% if tournament.mode == 'round_robin' %}
+                                    <span class="badge bg-secondary ms-2">Jeder gg. Jeden</span>
+                                {% elif tournament.mode == 'knockout' %}
+                                    <span class="badge bg-warning text-dark ms-2">K.O.-System</span>
+                                {% endif %}
                             </div>
                             <small class="text-muted">{{ tournament.date_created.strftime('%d.%m.%Y %H:%M') }}</small>
                         </a>
