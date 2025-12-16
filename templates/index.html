@@ -21,7 +21,7 @@
                             <label for="tournament_mode" class="form-label">Turniermodus</label>
                             <select class="form-select" id="tournament_mode" name="tournament_mode">
                                 <option value="round_robin" selected>Jeder gegen Jeden (Round Robin)</option>
-                                <option value="knockout" disabled>K.O.-System (Coming Soon)</option>
+                                <option value="knockout">K.O.-System</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -67,6 +67,11 @@
                                     <span class="badge bg-success ms-2">Beendet</span>
                                 {% else %}
                                     <span class="badge bg-primary ms-2">Läuft</span>
+                                {% endif %}
+                                {% if tournament.mode == 'round_robin' %}
+                                    <span class="badge bg-secondary ms-2">Jeder gg. Jeden</span>
+                                {% elif tournament.mode == 'knockout' %}
+                                    <span class="badge bg-warning text-dark ms-2">K.O.-System</span>
                                 {% endif %}
                             </div>
                             <small class="text-muted">{{ tournament.date_created.strftime('%d.%m.%Y %H:%M') }}</small>

@@ -161,7 +161,7 @@
                     <div class="p-3 bg-secondary text-white d-flex flex-column justify-content-end align-items-center shadow" style="height: 60%; width: 30%; margin-right: 5px; border-radius: 5px 5px 0 0;">
                         <div class="fw-bold fs-4">2</div>
                         <div class="text-truncate" style="max-width: 100%;">{{ standings[1].player.name }}</div>
-                        <div class="small">{{ standings[1].points }} Pkt</div>
+                        {% if tournament.mode != 'knockout' %}<div class="small">{{ standings[1].points }} Pkt</div>{% endif %}
                     </div>
                     {% endif %}
                     
@@ -170,7 +170,7 @@
                         <div class="display-4"><i class="bi bi-trophy-fill"></i></div>
                         <div class="fw-bold fs-3">1</div>
                         <div class="fw-bold text-truncate" style="max-width: 100%;">{{ standings[0].player.name }}</div>
-                        <div class="small">{{ standings[0].points }} Pkt</div>
+                        {% if tournament.mode != 'knockout' %}<div class="small">{{ standings[0].points }} Pkt</div>{% endif %}
                     </div>
                     {% endif %}
                     
@@ -178,13 +178,15 @@
                     <div class="p-3 bg-danger text-white d-flex flex-column justify-content-end align-items-center shadow" style="height: 40%; width: 30%; margin-left: 5px; border-radius: 5px 5px 0 0; background-color: #cd7f32 !important;">
                         <div class="fw-bold fs-4">3</div>
                         <div class="text-truncate" style="max-width: 100%;">{{ standings[2].player.name }}</div>
-                        <div class="small">{{ standings[2].points }} Pkt</div>
+                        {% if tournament.mode != 'knockout' %}<div class="small">{{ standings[2].points }} Pkt</div>{% endif %}
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     {% endif %}
+
+    {% if tournament.mode == 'round_robin' %}
 
     <div class="row">
         <div class="col-lg-8">
@@ -225,7 +227,7 @@
                                                                 
                                                                 <!-- Player 1 (Left) -->
                                                                 <div class="player-container player-left {% if match.completed and match.score_player1 > match.score_player2 %}fw-bold text-success{% endif %}">
-                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name }}</span>
+                                                                    <span class="player-name" data-player="{{ match.player1.name }}">{{ match.player1.name }}</span>
                                                                     <div class="player-avatar ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name[0] }}</div>
                                                                 </div>
                     
@@ -259,7 +261,7 @@
                                                                 <!-- Player 2 (Right) -->
                                                                 <div class="player-container player-right {% if match.completed and match.score_player2 > match.score_player1 %}fw-bold text-success{% endif %}">
                                                                     <div class="player-avatar me-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name[0] }}</div>
-                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name }}</span>
+                                                                    <span class="player-name" data-player="{{ match.player2.name }}">{{ match.player2.name }}</span>
                                                                 </div>
                     
                                                             </div>
@@ -330,6 +332,133 @@
             </div>
         </div>
     </div>
+    {% elif tournament.mode == 'knockout' %}
+        <style>
+            .bracket-container {
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 20px;
+            }
+            .bracket-round {
+                display: flex;
+                flex-direction: column;
+                min-width: 200px;
+                margin-right: 20px;
+                flex: 1;
+            }
+            .bracket-matches-wrapper {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                flex: 1;
+                gap: 20px;
+            }
+            .bracket-round-title {
+                text-align: center;
+                font-weight: bold;
+                margin-bottom: 15px;
+                color: var(--bs-secondary);
+            }
+            .bracket-match {
+                background: var(--bs-body-bg);
+                border: 1px solid var(--bs-border-color);
+                border-radius: 8px;
+                padding: 8px;
+                padding-right: 15px;
+                position: relative;
+                overflow: visible;
+            }
+            .bracket-player {
+                display: flex;
+                justify-content: space-between;
+                padding: 2px 0;
+            }
+            .bracket-player.winner {
+                font-weight: bold;
+                color: var(--bs-success);
+            }
+            .bracket-score {
+                font-weight: bold;
+            }
+            .bracket-edit-btn {
+                position: absolute;
+                right: -12px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.7rem;
+                z-index: 10;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+        </style>
+
+        <div class="card shadow-sm border-0 mb-4">
+             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0">Turnierbaum</h5>
+                {% if not tournament.is_finished %}
+                    {% if all_matches_completed %}
+                         <form action="{{ url_for('main.finish_tournament', tournament_id=tournament.id) }}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-sm fw-bold px-3" onclick="return confirm('Turnier beenden?')">Turnier beenden</button>
+                         </form>
+                    {% endif %}
+                {% else %}
+                    <span class="badge bg-success">Turnier Beendet</span>
+                {% endif %}
+            </div>
+            <div class="card-body bg-light-subtle" style="overflow-x: auto;">
+                <div class="bracket-container">
+                    {% for round_num, round_matches in matches_by_round.items() %}
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">
+                                {% if loop.last %}Finale{% elif loop.revindex == 2 %}Halbfinale{% elif loop.revindex == 3 %}Viertelfinale{% else %}Runde {{ round_num }}{% endif %}
+                            </div>
+                            <div class="bracket-matches-wrapper">
+                            {% for match in round_matches %}
+                                {% if match.round_number > 1 or match.player2 %}
+                                    <div class="bracket-match shadow-sm {% if match.completed %}border-success border-opacity-25{% endif %}">
+                                        {% if match.is_third_place %}
+                                            <div class="position-absolute top-0 start-50 translate-middle badge bg-secondary text-white" style="font-size: 0.6em; z-index: 5;">Spiel um Platz 3</div>
+                                        {% endif %}
+                                        <div class="bracket-player {% if match.completed and match.score_player1 > match.score_player2 %}winner{% endif %}">
+                                            <span class="text-truncate" style="max-width: 150px;">
+                                                {{ match.player1.name if match.player1 else 'TBD' }}
+                                            </span>
+                                            <span class="bracket-score">{{ match.score_player1 }}</span>
+                                        </div>
+                                        <div class="bracket-player {% if match.completed and match.score_player2 > match.score_player1 %}winner{% endif %}">
+                                            <span class="text-truncate" style="max-width: 150px;">
+                                                {{ match.player2.name if match.player2 else 'TBD' }}
+                                            </span>
+                                            <span class="bracket-score">{{ match.score_player2 }}</span>
+                                        </div>
+                                        
+                                        {% if not match.completed and match.player1 and match.player2 %}
+                                            <button class="btn btn-primary bracket-edit-btn" 
+                                                    data-bs-toggle="modal" data-bs-target="#scoreModal"
+                                                    data-bs-match-id="{{ match.id }}"
+                                                    data-bs-p1-name="{{ match.player1.name }}"
+                                                    data-bs-p2-name="{{ match.player2.name }}"
+                                                    title="Ergebnis eintragen">
+                                                <i class="bi bi-pencil-fill"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
 {% endblock %}
 
@@ -416,13 +545,17 @@
                 });
             }
 
-            // 1. Hover über Spielernamen (Badge) -> Zeige alle Spiele DIESES Spielers (Gelb)
+            // Click on Player Avatar -> Activate Player's matches (Yellow/Green)
+            // Mouseleave Player Avatar -> Deactivate
             badges.forEach(badge => {
-                badge.addEventListener('mouseenter', (e) => {
-                    // Eventuelle Klick-Highlights entfernen, um Konflikte zu vermeiden
-                    resetClickedMatchStyles();
-
+                badge.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    // Activate styles on click
                     const playerName = badge.dataset.player;
+                    
+                    // Reset first to avoid conflicts if another was active
+                    resetMatchStyles();
+
                     matchCards.forEach(match => {
                         const isParticipant = (match.dataset.player1 === playerName || match.dataset.player2 === playerName);
                         const isCompleted = (match.dataset.completed === 'true');
@@ -440,21 +573,21 @@
                 });
 
                 badge.addEventListener('mouseleave', () => {
-                    resetMatchStyles(); // Setzt alle Highlight-Stile zurück
-                });
-                
-                badge.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Verhindert, dass der Klick auf die Karte auch auslöst
+                    // Deactivate styles on mouseleave
+                    resetMatchStyles();
                 });
             });
-
-            let activeMatchId = null; // Speichert das aktuell geklickte Match
 
             // Klick auf Match-Karte -> Zeige alle PARALLEL MÖGLICHEN Spiele (Grün)
             matchCards.forEach(card => {
                 card.addEventListener('click', (e) => {
                     // Wenn der Klick von einem Badge kam, wurde er schon oben behandelt und gestoppt
                     if (e.target.closest('.badge-hover-target')) {
+                        return;
+                    }
+
+                    // Check if click came from a button or editable score (modal triggers)
+                    if (e.target.closest('button') || e.target.closest('.score-editable')) {
                         return;
                     }
                     
