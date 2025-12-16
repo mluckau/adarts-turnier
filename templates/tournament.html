@@ -398,7 +398,7 @@
                     {% for round_num, round_matches in matches_by_round.items() %}
                         <div class="bracket-round">
                             <div class="bracket-round-title">
-                                {% if loop.last %}Finale{% elif loop.revindex == 2 %}Halbfinale{% else %}Runde {{ round_num }}{% endif %}
+                                {% if loop.last %}Finale{% elif loop.revindex == 2 %}Halbfinale{% elif loop.revindex == 3 %}Viertelfinale{% else %}Runde {{ round_num }}{% endif %}
                             </div>
                             <div class="bracket-matches-wrapper">
                             {% for match in round_matches %}
