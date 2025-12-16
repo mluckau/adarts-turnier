@@ -586,6 +586,11 @@
                     if (e.target.closest('.badge-hover-target')) {
                         return;
                     }
+
+                    // Check if click came from a button or editable score (modal triggers)
+                    if (e.target.closest('button') || e.target.closest('.score-editable')) {
+                        return;
+                    }
                     
                     // Wenn das Spiel bereits abgeschlossen ist, soll die Parallel-Logik NICHT greifen.
                     // (Das Bearbeiten des Ergebnisses läuft über das Modal und wird separat behandelt)
