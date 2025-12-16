@@ -304,6 +304,11 @@
                                     </span>
                                     <div class="player-avatar badge-hover-target shadow-sm" style="width: 30px; height: 30px; font-size: 0.8rem; background-color: var(--bs-primary); color: white; cursor: pointer;" data-player="{{ player_standing.player.name }}">{{ player_standing.player.name[0] }}</div>
                                     <span class="fw-bold ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ player_standing.player.name }}">{{ player_standing.player.name }}</span>
+                                    {% if not tournament.is_finished and player_standing.open_matches > 0 %}
+                                        <span class="badge bg-info bg-opacity-25 text-info ms-2 border border-info-subtle" style="font-size: 0.65em; font-weight: normal;" title="Noch {{ player_standing.open_matches }} offene Spiele">
+                                            {{ player_standing.open_matches }}
+                                        </span>
+                                    {% endif %}
                                 </div>
                                 <div class="text-end">
                                     <div class="d-flex justify-content-end mb-1 align-items-center">

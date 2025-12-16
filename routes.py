@@ -86,7 +86,7 @@ def tournament_view(tournament_id):
 
     # Calculate standings
     player_stats = {player.id: {'player': player, 'points': 0, 'wins': 0,
-                                'losses': 0, 'draws': 0, 'legs_won': 0, 'legs_lost': 0} for player in players}
+                                'losses': 0, 'draws': 0, 'legs_won': 0, 'legs_lost': 0, 'open_matches': 0} for player in players}
 
     # Helper map to find match between two players quickly
     match_map = {}
@@ -97,6 +97,11 @@ def tournament_view(tournament_id):
             p1 = match.player1_id
             p2 = match.player2_id
             match_map[(min(p1, p2), max(p1, p2))] = match
+            
+            if not match.completed:
+                player_stats[match.player1.id]['open_matches'] += 1
+                player_stats[match.player2.id]['open_matches'] += 1
+
 
         if match.completed and match.player2_id is not None:  # Exclude byes
             # Update legs
