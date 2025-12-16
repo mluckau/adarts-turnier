@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for
 from models import db, Tournament, Player, Match
-from utils import sort_standings, generate_round_robin_schedule
+from utils import sort_standings, generate_round_robin_schedule, generate_knockout_schedule, advance_winner
 from datetime import datetime
 
 main = Blueprint('main', __name__)
@@ -51,6 +51,8 @@ def create_tournament():
 
     if tournament_mode == 'round_robin':
         generate_round_robin_schedule(tournament.id, players)
+    elif tournament_mode == 'knockout':
+        generate_knockout_schedule(tournament.id, players)
     
     return redirect(url_for('main.tournament_view', tournament_id=tournament.id))
 
@@ -64,6 +66,11 @@ def update_score(match_id):
         match.score_player1 = score_player1
         match.score_player2 = score_player2
         match.completed = True
+        
+        # Advance winner if in knockout mode (or check next_match_id)
+        if match.tournament.mode == 'knockout':
+            advance_winner(match)
+            
         db.session.commit()
     return redirect(url_for('main.tournament_view', tournament_id=match.tournament_id))
 
@@ -72,6 +79,26 @@ def update_score(match_id):
 def reopen_match(match_id):
     match = Match.query.get_or_404(match_id)
     match.completed = False
+    # TODO: Handle undoing advancement? 
+    # For now, just reopen. The next match might need to be reset manually or logic added.
+    # Logic to reset next match:
+    if match.tournament.mode == 'knockout' and match.next_match_id:
+        next_match = Match.query.get(match.next_match_id)
+        if next_match:
+            # Reset the slot in next match
+            if match.next_match_slot == 1:
+                next_match.player1 = None
+            elif match.next_match_slot == 2:
+                next_match.player2 = None
+            # Also reset next match scores/completion if it was started?
+            if next_match.completed:
+                # Recursive reopen? simpler to just uncomplete it.
+                next_match.completed = False
+                next_match.score_player1 = 0
+                next_match.score_player2 = 0
+                # And recursive up the chain...
+                # For MVP, just resetting immediate next match player is enough.
+            
     db.session.commit()
     return redirect(url_for('main.tournament_view', tournament_id=match.tournament_id))
 
@@ -84,15 +111,15 @@ def tournament_view(tournament_id):
     players = Player.query.filter_by(tournament_id=tournament.id).filter(
         Player.name != "BYE_PLAYER_DUMMY").all()
 
-    # Calculate standings
+    # Calculate standings (Round Robin logic mostly, but safe for KO)
     player_stats = {player.id: {'player': player, 'points': 0, 'wins': 0,
                                 'losses': 0, 'draws': 0, 'legs_won': 0, 'legs_lost': 0, 'open_matches': 0} for player in players}
 
     # Helper map to find match between two players quickly
     match_map = {}
-
+    
     for match in matches:
-        if match.player2_id is not None:
+        if match.player1_id and match.player2_id:
             # Store match reference for direct comparison
             p1 = match.player1_id
             p2 = match.player2_id
@@ -102,8 +129,7 @@ def tournament_view(tournament_id):
                 player_stats[match.player1.id]['open_matches'] += 1
                 player_stats[match.player2.id]['open_matches'] += 1
 
-
-        if match.completed and match.player2_id is not None:  # Exclude byes
+        if match.completed and match.player1_id and match.player2_id:  # Exclude byes and future matches
             # Update legs
             player_stats[match.player1.id]['legs_won'] += match.score_player1
             player_stats[match.player1.id]['legs_lost'] += match.score_player2
@@ -125,11 +151,16 @@ def tournament_view(tournament_id):
                 player_stats[match.player2.id]['points'] += 1
                 player_stats[match.player1.id]['draws'] += 1
                 player_stats[match.player2.id]['draws'] += 1
-        elif match.completed and match.player2_id is None:  # Handle byes
+        elif match.completed and (match.player2_id is None or match.player1_id is None):  # Handle byes
             pass
 
     # Sort standings using utils logic
-    standings = sort_standings(player_stats, matches)
+    if tournament.mode == 'round_robin':
+        standings = sort_standings(player_stats, matches)
+    else:
+        # KO: Standings less relevant, but maybe show players?
+        # Just sort by wins?
+        standings = sorted(player_stats.values(), key=lambda x: x['wins'], reverse=True)
 
     # Group matches by round for display, excluding bye matches
     matches_by_round = {}
@@ -138,25 +169,45 @@ def tournament_view(tournament_id):
     completed_matches = 0
     
     for match in matches:
-        if match.player2_id is not None:  # Exclude matches with a bye
+        # In KO, we show all matches, even placeholders?
+        # Yes, for the bracket.
+        # But for 'round_robin' view logic, we filtered.
+        # Let's keep existing logic for RR.
+        
+        if tournament.mode == 'round_robin':
+            if match.player2_id is not None:  # Exclude matches with a bye
+                total_matches += 1
+                if match.completed:
+                    completed_matches += 1
+                    
+                match.display_number = match_counter
+                match_counter += 1
+                if match.round_number not in matches_by_round:
+                    matches_by_round[match.round_number] = []
+                matches_by_round[match.round_number].append(match)
+        else:
+            # KO Logic: Include all matches
             total_matches += 1
             if match.completed:
                 completed_matches += 1
-                
-            match.display_number = match_counter
-            match_counter += 1
+            match.display_number = match.id # Use ID or something
             if match.round_number not in matches_by_round:
                 matches_by_round[match.round_number] = []
             matches_by_round[match.round_number].append(match)
 
-    # Check if all matches are completed (excluding byes) for the finish button
-    unfinished_matches_count = Match.query.filter_by(
-        tournament_id=tournament.id, completed=False).filter(Match.player2_id != None).count()
+    # Check if all matches are completed
+    if tournament.mode == 'round_robin':
+        unfinished_matches_count = Match.query.filter_by(
+            tournament_id=tournament.id, completed=False).filter(Match.player2_id != None).count()
+    else:
+        # KO: All matches must be completed
+        unfinished_matches_count = Match.query.filter_by(
+            tournament_id=tournament.id, completed=False).count()
+            
     all_matches_completed = (unfinished_matches_count ==
                              0) and (len(matches) > 0)
 
     return render_template('tournament.html', tournament=tournament, matches_by_round=matches_by_round, standings=standings, all_matches_completed=all_matches_completed, total_matches=total_matches, completed_matches=completed_matches)
-
 
 @main.route('/finish_tournament/<int:tournament_id>', methods=['POST'])
 def finish_tournament(tournament_id):

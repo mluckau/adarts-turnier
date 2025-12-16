@@ -152,6 +152,7 @@
         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Zurück zur Übersicht</a>
     </div>
 
+    {% if tournament.mode == 'round_robin' %}
     {% if tournament.is_finished %}
         <div class="row mb-5 justify-content-center">
             <div class="col-md-8 text-center">
@@ -330,6 +331,113 @@
             </div>
         </div>
     </div>
+    {% elif tournament.mode == 'knockout' %}
+        <style>
+            .bracket-container {
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 20px;
+            }
+            .bracket-round {
+                display: flex;
+                flex-direction: column;
+                min-width: 250px;
+                margin-right: 20px;
+                flex: 1;
+            }
+            .bracket-matches-wrapper {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                flex: 1;
+                gap: 20px;
+            }
+            .bracket-round-title {
+                text-align: center;
+                font-weight: bold;
+                margin-bottom: 15px;
+                color: var(--bs-secondary);
+            }
+            .bracket-match {
+                background: var(--bs-body-bg);
+                border: 1px solid var(--bs-border-color);
+                border-radius: 8px;
+                padding: 10px;
+                position: relative;
+            }
+            .bracket-player {
+                display: flex;
+                justify-content: space-between;
+                padding: 4px 0;
+            }
+            .bracket-player.winner {
+                font-weight: bold;
+                color: var(--bs-success);
+            }
+            .bracket-score {
+                font-weight: bold;
+            }
+        </style>
+
+        <div class="card shadow-sm border-0 mb-4">
+             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0">Turnierbaum</h5>
+                {% if not tournament.is_finished %}
+                    {% if all_matches_completed %}
+                         <form action="{{ url_for('main.finish_tournament', tournament_id=tournament.id) }}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-sm fw-bold px-3" onclick="return confirm('Turnier beenden?')">Turnier beenden</button>
+                         </form>
+                    {% endif %}
+                {% else %}
+                    <span class="badge bg-success">Turnier Beendet</span>
+                {% endif %}
+            </div>
+            <div class="card-body bg-light-subtle" style="overflow-x: auto;">
+                <div class="bracket-container">
+                    {% for round_num, round_matches in matches_by_round.items() %}
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">
+                                {% if loop.last %}Finale{% elif loop.revindex == 2 %}Halbfinale{% else %}Runde {{ round_num }}{% endif %}
+                            </div>
+                            <div class="bracket-matches-wrapper">
+                            {% for match in round_matches %}
+                                {% if match.round_number > 1 or match.player2 %}
+                                    <div class="bracket-match shadow-sm {% if match.completed %}border-success border-opacity-25{% endif %}">
+                                        <div class="bracket-player {% if match.completed and match.score_player1 > match.score_player2 %}winner{% endif %}">
+                                            <span class="text-truncate" style="max-width: 150px;">
+                                                {{ match.player1.name if match.player1 else 'TBD' }}
+                                            </span>
+                                            <span class="bracket-score">{{ match.score_player1 }}</span>
+                                        </div>
+                                        <div class="bracket-player {% if match.completed and match.score_player2 > match.score_player1 %}winner{% endif %}">
+                                            <span class="text-truncate" style="max-width: 150px;">
+                                                {{ match.player2.name if match.player2 else 'TBD' }}
+                                            </span>
+                                            <span class="bracket-score">{{ match.score_player2 }}</span>
+                                        </div>
+                                        
+                                        {% if not match.completed and match.player1 and match.player2 %}
+                                            <div class="text-center mt-2">
+                                                <button class="btn btn-sm btn-outline-primary py-0" 
+                                                        data-bs-toggle="modal" data-bs-target="#scoreModal"
+                                                        data-bs-match-id="{{ match.id }}"
+                                                        data-bs-p1-name="{{ match.player1.name }}"
+                                                        data-bs-p2-name="{{ match.player2.name }}">
+                                                    Ergebnis
+                                                </button>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
 {% endblock %}
 

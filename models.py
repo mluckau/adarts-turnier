@@ -26,7 +26,7 @@ class Player(db.Model):
 class Match(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tournament_id = db.Column(db.Integer, db.ForeignKey('tournament.id'), nullable=False)
-    player1_id = db.Column(db.Integer, db.ForeignKey('player.id'), nullable=False)
+    player1_id = db.Column(db.Integer, db.ForeignKey('player.id'), nullable=True)
     player2_id = db.Column(db.Integer, db.ForeignKey('player.id'), nullable=True) # Null for bye
     player1 = db.relationship('Player', foreign_keys=[player1_id], backref='matches_as_player1')
     player2 = db.relationship('Player', foreign_keys=[player2_id], backref='matches_as_player2')
@@ -34,6 +34,9 @@ class Match(db.Model):
     score_player2 = db.Column(db.Integer, default=0)
     completed = db.Column(db.Boolean, default=False)
     round_number = db.Column(db.Integer, nullable=False, default=1)
+    next_match_id = db.Column(db.Integer, db.ForeignKey('match.id'), nullable=True)
+    next_match_slot = db.Column(db.Integer, nullable=True) # 1 or 2
+    next_match = db.relationship('Match', remote_side=[id], backref='previous_matches')
 
     def __repr__(self):
         return '<Match %r vs %r (Round %d)>' % (self.player1.name, self.player2.name if self.player2 else 'BYE', self.round_number)
