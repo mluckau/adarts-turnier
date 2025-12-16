@@ -152,7 +152,6 @@
         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Zurück zur Übersicht</a>
     </div>
 
-    {% if tournament.mode == 'round_robin' %}
     {% if tournament.is_finished %}
         <div class="row mb-5 justify-content-center">
             <div class="col-md-8 text-center">
@@ -186,6 +185,8 @@
             </div>
         </div>
     {% endif %}
+
+    {% if tournament.mode == 'round_robin' %}
 
     <div class="row">
         <div class="col-lg-8">
@@ -422,6 +423,9 @@
                             {% for match in round_matches %}
                                 {% if match.round_number > 1 or match.player2 %}
                                     <div class="bracket-match shadow-sm {% if match.completed %}border-success border-opacity-25{% endif %}">
+                                        {% if match.is_third_place %}
+                                            <div class="position-absolute top-0 start-50 translate-middle badge bg-secondary text-white" style="font-size: 0.6em; z-index: 5;">Spiel um Platz 3</div>
+                                        {% endif %}
                                         <div class="bracket-player {% if match.completed and match.score_player1 > match.score_player2 %}winner{% endif %}">
                                             <span class="text-truncate" style="max-width: 150px;">
                                                 {{ match.player1.name if match.player1 else 'TBD' }}

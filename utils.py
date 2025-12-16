@@ -5,22 +5,29 @@ import random
 def advance_winner(match):
     """
     Advances the winner of a match to the next match in the bracket.
+    Also advances the loser if a loser match is defined (e.g. for 3rd place).
     """
     if not match.completed:
         return
         
     winner = None
+    loser = None
+    
     if match.player2 is None:
         # Bye
         winner = match.player1
+        # No loser in a bye
     elif match.score_player1 > match.score_player2:
         winner = match.player1
+        loser = match.player2
     elif match.score_player2 > match.score_player1:
         winner = match.player2
+        loser = match.player1
     else:
         # Draw? No draws in KO.
         return
 
+    # Advance Winner
     if match.next_match_id and winner:
         next_match = Match.query.get(match.next_match_id)
         if next_match:
@@ -28,7 +35,17 @@ def advance_winner(match):
                 next_match.player1 = winner
             elif match.next_match_slot == 2:
                 next_match.player2 = winner
-            db.session.add(next_match) # Mark as modified
+            db.session.add(next_match)
+
+    # Advance Loser (if applicable)
+    if match.loser_next_match_id and loser:
+        loser_next_match = Match.query.get(match.loser_next_match_id)
+        if loser_next_match:
+            if match.loser_next_match_slot == 1:
+                loser_next_match.player1 = loser
+            elif match.loser_next_match_slot == 2:
+                loser_next_match.player2 = loser
+            db.session.add(loser_next_match)
 
 def generate_knockout_schedule(tournament_id, players):
     n_players = len(players)
@@ -65,6 +82,26 @@ def generate_knockout_schedule(tournament_id, players):
             match.next_match_id = next_m.id
             match.next_match_slot = 1 if (i % 2 == 0) else 2
             
+    # Add 3rd Place Match
+    if total_rounds >= 2:
+        # Semifinals are at index total_rounds - 2 (Round N-1)
+        # The list 'rounds' is 0-indexed.
+        # Round 1 is rounds[0].
+        # Final is Round N = rounds[total_rounds - 1].
+        # Semis is Round N-1 = rounds[total_rounds - 2].
+        
+        semis = rounds[total_rounds - 2]
+        
+        # Create 3rd place match in the same round number as the final (visually in same col usually)
+        third_place_match = Match(tournament_id=tournament_id, round_number=total_rounds, is_third_place=True)
+        db.session.add(third_place_match)
+        db.session.flush()
+        
+        # Link Semis to 3rd Place Match
+        for i, semi_match in enumerate(semis):
+            semi_match.loser_next_match_id = third_place_match.id
+            semi_match.loser_next_match_slot = i + 1 # 1 or 2
+            
     # Assign players to Round 1
     # Distribute Byes:
     # First (N - Byes) matches are P vs P
@@ -74,26 +111,6 @@ def generate_knockout_schedule(tournament_id, players):
     player_idx = 0
     round1_matches = rounds[0]
     n_byes = bracket_size - n_players
-    
-    # Number of matches that will be fully populated (P vs P)
-    # Total slots = 2 * len(round1_matches).
-    # We have n_players. n_byes.
-    # We want to fill matches such that Byes are paired with Players.
-    # Every Bye consumes 1 Match (Player vs Bye).
-    # Remaining matches are Player vs Player.
-    # Check: n_byes <= len(round1_matches)?
-    # 5 players, size 8. 4 matches. 3 byes. 3 < 4. Yes.
-    # 3 players, size 4. 2 matches. 1 bye. 1 < 2. Yes.
-    
-    # So we have `n_byes` matches with (P, Bye).
-    # And `len(round1_matches) - n_byes` matches with (P, P).
-    
-    # Optimization: Distribute Byes? usually top/bottom.
-    # For now, put Byes at the end of the list so they feed into specific parts of the bracket?
-    # Or spread them?
-    # If we put them at the end, one half of the bracket might be empty.
-    # Better to spread. 
-    # But simple logic first.
     
     n_full_matches = len(round1_matches) - n_byes
     

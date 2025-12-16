@@ -36,7 +36,13 @@ class Match(db.Model):
     round_number = db.Column(db.Integer, nullable=False, default=1)
     next_match_id = db.Column(db.Integer, db.ForeignKey('match.id'), nullable=True)
     next_match_slot = db.Column(db.Integer, nullable=True) # 1 or 2
-    next_match = db.relationship('Match', remote_side=[id], backref='previous_matches')
+    next_match = db.relationship('Match', foreign_keys=[next_match_id], remote_side=[id], backref='previous_matches_winner')
+
+    loser_next_match_id = db.Column(db.Integer, db.ForeignKey('match.id'), nullable=True)
+    loser_next_match_slot = db.Column(db.Integer, nullable=True) # 1 or 2
+    loser_next_match = db.relationship('Match', foreign_keys=[loser_next_match_id], remote_side=[id], backref='previous_matches_loser')
+
+    is_third_place = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return '<Match %r vs %r (Round %d)>' % (self.player1.name, self.player2.name if self.player2 else 'BYE', self.round_number)

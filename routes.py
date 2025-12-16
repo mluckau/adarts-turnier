@@ -158,9 +158,63 @@ def tournament_view(tournament_id):
     if tournament.mode == 'round_robin':
         standings = sort_standings(player_stats, matches)
     else:
-        # KO: Standings less relevant, but maybe show players?
-        # Just sort by wins?
-        standings = sorted(player_stats.values(), key=lambda x: x['wins'], reverse=True)
+        # KO: Rank by specific achievements
+        # 1. Winner of Final
+        # 2. Loser of Final
+        # 3. Winner of 3rd Place Match
+        # 4. Loser of 3rd Place Match
+        # 5+. Sort by wins
+        
+        # Identify specific matches
+        final_match = None
+        third_place_match = None
+        
+        # Max round number logic is brittle if we just take max(round_number) because 3rd place is also max.
+        # But we added is_third_place flag.
+        
+        # Find max round number
+        max_round = 0
+        if matches:
+            max_round = max(m.round_number for m in matches)
+            
+        for m in matches:
+            if m.round_number == max_round:
+                if m.is_third_place:
+                    third_place_match = m
+                else:
+                    final_match = m
+        
+        # Assign ranks
+        ranked_ids = []
+        
+        if final_match and final_match.completed:
+            if final_match.score_player1 > final_match.score_player2:
+                ranked_ids.append(final_match.player1_id) # 1st
+                ranked_ids.append(final_match.player2_id) # 2nd
+            else:
+                ranked_ids.append(final_match.player2_id) # 1st
+                ranked_ids.append(final_match.player1_id) # 2nd
+                
+        if third_place_match and third_place_match.completed:
+            if third_place_match.score_player1 > third_place_match.score_player2:
+                ranked_ids.append(third_place_match.player1_id) # 3rd
+                ranked_ids.append(third_place_match.player2_id) # 4th
+            else:
+                ranked_ids.append(third_place_match.player2_id) # 3rd
+                ranked_ids.append(third_place_match.player1_id) # 4th
+        
+        # Build the final sorted list
+        # Start with the specifically ranked players
+        ko_standings = []
+        for pid in ranked_ids:
+            if pid in player_stats:
+                ko_standings.append(player_stats[pid])
+                
+        # Add the rest, sorted by wins
+        rest_of_players = [p for pid, p in player_stats.items() if pid not in ranked_ids]
+        rest_of_players.sort(key=lambda x: x['wins'], reverse=True)
+        
+        standings = ko_standings + rest_of_players
 
     # Group matches by round for display, excluding bye matches
     matches_by_round = {}
