@@ -161,7 +161,7 @@
                     <div class="p-3 bg-secondary text-white d-flex flex-column justify-content-end align-items-center shadow" style="height: 60%; width: 30%; margin-right: 5px; border-radius: 5px 5px 0 0;">
                         <div class="fw-bold fs-4">2</div>
                         <div class="text-truncate" style="max-width: 100%;">{{ standings[1].player.name }}</div>
-                        <div class="small">{{ standings[1].points }} Pkt</div>
+                        {% if tournament.mode != 'knockout' %}<div class="small">{{ standings[1].points }} Pkt</div>{% endif %}
                     </div>
                     {% endif %}
                     
@@ -170,7 +170,7 @@
                         <div class="display-4"><i class="bi bi-trophy-fill"></i></div>
                         <div class="fw-bold fs-3">1</div>
                         <div class="fw-bold text-truncate" style="max-width: 100%;">{{ standings[0].player.name }}</div>
-                        <div class="small">{{ standings[0].points }} Pkt</div>
+                        {% if tournament.mode != 'knockout' %}<div class="small">{{ standings[0].points }} Pkt</div>{% endif %}
                     </div>
                     {% endif %}
                     
@@ -178,7 +178,7 @@
                     <div class="p-3 bg-danger text-white d-flex flex-column justify-content-end align-items-center shadow" style="height: 40%; width: 30%; margin-left: 5px; border-radius: 5px 5px 0 0; background-color: #cd7f32 !important;">
                         <div class="fw-bold fs-4">3</div>
                         <div class="text-truncate" style="max-width: 100%;">{{ standings[2].player.name }}</div>
-                        <div class="small">{{ standings[2].points }} Pkt</div>
+                        {% if tournament.mode != 'knockout' %}<div class="small">{{ standings[2].points }} Pkt</div>{% endif %}
                     </div>
                     {% endif %}
                 </div>
