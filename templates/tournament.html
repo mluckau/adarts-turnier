@@ -227,7 +227,7 @@
                                                                 
                                                                 <!-- Player 1 (Left) -->
                                                                 <div class="player-container player-left {% if match.completed and match.score_player1 > match.score_player2 %}fw-bold text-success{% endif %}">
-                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name }}</span>
+                                                                    <span class="player-name" data-player="{{ match.player1.name }}">{{ match.player1.name }}</span>
                                                                     <div class="player-avatar ms-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player1.name }}">{{ match.player1.name[0] }}</div>
                                                                 </div>
                     
@@ -261,7 +261,7 @@
                                                                 <!-- Player 2 (Right) -->
                                                                 <div class="player-container player-right {% if match.completed and match.score_player2 > match.score_player1 %}fw-bold text-success{% endif %}">
                                                                     <div class="player-avatar me-2 badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name[0] }}</div>
-                                                                    <span class="player-name badge-hover-target" style="cursor: pointer;" data-player="{{ match.player2.name }}">{{ match.player2.name }}</span>
+                                                                    <span class="player-name" data-player="{{ match.player2.name }}">{{ match.player2.name }}</span>
                                                                 </div>
                     
                                                             </div>
@@ -545,13 +545,17 @@
                 });
             }
 
-            // 1. Hover über Spielernamen (Badge) -> Zeige alle Spiele DIESES Spielers (Gelb)
+            // Click on Player Avatar -> Activate Player's matches (Yellow/Green)
+            // Mouseleave Player Avatar -> Deactivate
             badges.forEach(badge => {
-                badge.addEventListener('mouseenter', (e) => {
-                    // Eventuelle Klick-Highlights entfernen, um Konflikte zu vermeiden
-                    resetClickedMatchStyles();
-
+                badge.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    // Activate styles on click
                     const playerName = badge.dataset.player;
+                    
+                    // Reset first to avoid conflicts if another was active
+                    resetMatchStyles();
+
                     matchCards.forEach(match => {
                         const isParticipant = (match.dataset.player1 === playerName || match.dataset.player2 === playerName);
                         const isCompleted = (match.dataset.completed === 'true');
@@ -569,21 +573,21 @@
                 });
 
                 badge.addEventListener('mouseleave', () => {
-                    resetMatchStyles(); // Setzt alle Highlight-Stile zurück
-                });
-                
-                badge.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Verhindert, dass der Klick auf die Karte auch auslöst
+                    // Deactivate styles on mouseleave
+                    resetMatchStyles();
                 });
             });
-
-            let activeMatchId = null; // Speichert das aktuell geklickte Match
 
             // Klick auf Match-Karte -> Zeige alle PARALLEL MÖGLICHEN Spiele (Grün)
             matchCards.forEach(card => {
                 card.addEventListener('click', (e) => {
                     // Wenn der Klick von einem Badge kam, wurde er schon oben behandelt und gestoppt
                     if (e.target.closest('.badge-hover-target')) {
+                        return;
+                    }
+
+                    // Check if click came from a button or editable score (modal triggers)
+                    if (e.target.closest('button') || e.target.closest('.score-editable')) {
                         return;
                     }
                     

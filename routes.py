@@ -72,7 +72,7 @@ def update_score(match_id):
             advance_winner(match)
             
         db.session.commit()
-    return redirect(url_for('main.tournament_view', tournament_id=match.tournament_id))
+    return redirect(url_for('main.tournament_view', tournament_id=match.tournament_id, _anchor=f"match-{match.id}"))
 
 
 @main.route('/reopen_match/<int:match_id>', methods=['POST'])
